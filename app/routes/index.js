@@ -19,6 +19,21 @@ module.exports = function (app, passport) {
 		.get(isLoggedIn, function (req, res) {
 			res.sendFile(path + '/public/index.html');
 		});
+		
+	app.route('/api/whoami')
+		.get(function(req, res) {
+			var ipaddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+			var language = req.headers['accept-language'].split(',')[0];
+			req.headers['user-agent'].match(/\(([^\(]+)\)/);
+			var software = RegExp.$1;
+			var returnInfo = {
+				ipaddress: ipaddress, 
+				language: language,
+				software: software
+			};
+			
+		    res.send(JSON.stringify(returnInfo));
+		})
 
 	app.route('/login')
 		.get(function (req, res) {
