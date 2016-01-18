@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>
+            Url Shorten Ms
+        </title>
+        
+        <link href="/public/css/urlshorten.css" rel="stylesheet" type="text/css">    
+    </head>
+    
+    <body>
+        <h1>API Basejump: URL Shortener</h1>
+        <div>
+            <h2>User Stories:</h2>
+            <ol>
+                <li>I can pass a URL as a parameter and I will receive a shortened URL in the JSON response.</li>
+                <li>If I pass an invalid URL that doesn't folliw the valid http://www.example.com format, the JSON response will contain an error instead.</li>
+                <li>When I visit that shortened URL, it will redirect me to my original link.</li>
+            </ol>    
+        </div>
+        
+        <div>
+            <h2>Example creation usage:</h2>
+            <a href="https://basejump-air000.c9users.io/api/urlshorten/https://www.google.com">
+                <code>https://basejump-air000.c9users.io/api/urlshorten/https://www.google.com</code>
+            </a>
+            <h2>Example output:</h2>
+            <code>{"shorten_url":"http://basejump-air000.c9users.io/api/urlshorten/2","original_url":"https://www.google.com"}</code>
+        </div>
+        <div>
+            <h2>Usage:</h2>
+            
+            <a href="http://basejump-air000.c9users.io/api/urlshorten/2">
+                <code>http://basejump-air000.c9users.io/api/urlshorten/2</code>
+            </a>
+            
+            <h2>Redirect to:</h2>
+            <code>https://www.google.com</code>    
+        </div>    
+    </body>    
+</html>    

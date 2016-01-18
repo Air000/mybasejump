@@ -1,9 +1,9 @@
 'use strict';
 
+var linkifyjs = require("linkifyjs");
 var path = process.cwd();
-var ClickHandler = require(path + '/app/controllers/clickHandler.server.js');
 
-module.exports = function (app, passport) {
+module.exports = function (app, mongoose) {
 
 	function isLoggedIn (req, res, next) {
 		if (req.isAuthenticated()) {
@@ -12,11 +12,92 @@ module.exports = function (app, passport) {
 			res.redirect('/login');
 		}
 	}
+	
+	var db = mongoose.connection;
+	db.once("open", function(){
+		var urlSchema = mongoose.Schema({
+			original_url: String,
+			short_url: String
+		});
+		var Urls = mongoose.model('Urls', urlSchema);
+		
+		app.route('/api/urlshorten')
+			.get(function(req, res) {
+				
+				res.sendFile(path + '/public/urlshorten.html');
+					
+			});
 
-	var clickHandler = new ClickHandler();
+		app.route('/api/urlshorten/*')
+			.get(function(req, res) {
+				
+				
+				var hostUrl = req.protocol + '://' + req.get('host').split(':')[0];
+				var urlSuffix = req.originalUrl.slice('/api/urlshorten/'.length);
+				
+				console.log("hostUrl: ", hostUrl, req.originalUrl);
+				
+				if(linkifyjs.test(urlSuffix)) {
+					
+					var original_url = (/^https?:\/\//.test(urlSuffix))?urlSuffix:"http://" + urlSuffix;
+					
+					Urls.find({original_url: original_url}, function(err, urlfound){
+						if(err) console.log(err);
+						
+						if(urlfound.length) {
+							//url is in db
+							console.log("urlfound1: ", urlfound);
+							res.send(JSON.stringify({shorten_url: urlfound[0].short_url, original_url:urlfound[0].original_url}));
+						}else{
+							//insert new doc
+							console.log("not url found");
+							Urls.find().count(function(err, number) {
+								if(err) console.log(err);
+								
+								var newUrl = new Urls({original_url: original_url, short_url: hostUrl + '/api/urlshorten/' + number});
+								newUrl.save(function(err) {
+									if(err) console.log(err);
+								})
+								console.log(number, newUrl);
+								
+								res.send(JSON.stringify({shorten_url: newUrl.short_url, original_url: newUrl.original_url}));
+							});
+							
+						}
+						
+					});
+				} else if(Number(urlSuffix)){
+					//this is a short url, search it in DB
+					Urls.find(function(err, doc) {
+						if(err) console.log(err);
+						
+					});
+					
+					console.log("short_url: ", hostUrl);
+					Urls.find({short_url: hostUrl + req.originalUrl}, function(err, urlfound) {
+					    if(err) console.log(err);
+					    
+					    if(urlfound.length) {
+					    	
+					    	console.log("urlfound2: ", urlfound);
+					    	res.redirect(urlfound[0].original_url);
+					    }else{
+					    	
+					    	console.log(Number(urlSuffix));
+					    	res.send(JSON.stringify({error: "No short url found for given input"}))
+					    }
+					})
+					
+				} else {
+					res.send(JSON.stringify({error: "not a valid original url"}));
+				}
+				
+				//res.send(req.originalUrl.slice('/api/urlshorten/'.length));
+			});
+	});
 
 	app.route('/')
-		.get(isLoggedIn, function (req, res) {
+		.get(function (req, res) {
 			res.sendFile(path + '/public/index.html');
 		});
 		
@@ -26,6 +107,7 @@ module.exports = function (app, passport) {
 			var language = req.headers['accept-language'].split(',')[0];
 			req.headers['user-agent'].match(/\(([^\(]+)\)/);
 			var software = RegExp.$1;
+			
 			var returnInfo = {
 				ipaddress: ipaddress, 
 				language: language,
@@ -34,39 +116,7 @@ module.exports = function (app, passport) {
 			
 		    res.send(JSON.stringify(returnInfo));
 		})
-
-	app.route('/login')
-		.get(function (req, res) {
-			res.sendFile(path + '/public/login.html');
-		});
-
-	app.route('/logout')
-		.get(function (req, res) {
-			req.logout();
-			res.redirect('/login');
-		});
-
-	app.route('/profile')
-		.get(isLoggedIn, function (req, res) {
-			res.sendFile(path + '/public/profile.html');
-		});
-
-	app.route('/api/:id')
-		.get(isLoggedIn, function (req, res) {
-			res.json(req.user.github);
-		});
-
-	app.route('/auth/github')
-		.get(passport.authenticate('github'));
-
-	app.route('/auth/github/callback')
-		.get(passport.authenticate('github', {
-			successRedirect: '/',
-			failureRedirect: '/login'
-		}));
-
-	app.route('/api/:id/clicks')
-		.get(isLoggedIn, clickHandler.getClicks)
-		.post(isLoggedIn, clickHandler.addClick)
-		.delete(isLoggedIn, clickHandler.resetClicks);
+	
+	
+	
 };
