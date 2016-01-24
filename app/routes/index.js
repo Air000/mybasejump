@@ -1,6 +1,10 @@
 'use strict';
 
 var linkifyjs = require("linkifyjs");
+var googleapis = require("googleapis");
+var customsearch = googleapis.customsearch('v1');
+const API_KEY = 'AIzaSyCohpypclJBMcPy5nXXN2vNKlsbrATCzrg';
+const CX = '005349598196185284476:xuxolxmchfk';
 var path = process.cwd();
 
 module.exports = function (app, mongoose) {
@@ -15,6 +19,7 @@ module.exports = function (app, mongoose) {
 	
 	var db = mongoose.connection;
 	db.once("open", function(){
+		/********************this block for Url shorten********************************/
 		var urlSchema = mongoose.Schema({
 			original_url: String,
 			short_url: String
@@ -57,7 +62,7 @@ module.exports = function (app, mongoose) {
 								var newUrl = new Urls({original_url: original_url, short_url: hostUrl + '/api/urlshorten/' + number});
 								newUrl.save(function(err) {
 									if(err) console.log(err);
-								})
+								});
 								console.log(number, newUrl);
 								
 								res.send(JSON.stringify({shorten_url: newUrl.short_url, original_url: newUrl.original_url}));
@@ -94,6 +99,68 @@ module.exports = function (app, mongoose) {
 				
 				//res.send(req.originalUrl.slice('/api/urlshorten/'.length));
 			});
+		/********************************************************************************/	
+		
+		/*****************this block for Image Search Abstraction Layer******************/
+		
+		var imageSearchSchema = mongoose.Schema({
+			term: String,
+			when: String
+		});
+		var ImageSearch = mongoose.model('ImageSearch', imageSearchSchema);
+		app.route('/api/imagesearch')
+			.get(function(req, res) {
+			    res.sendFile(path + '/public/search.html');
+			});
+	
+		app.route('/api/imagesearch/*')
+			.get(function(req, res) {
+			    //console.log(req)
+			    var queryItem = req.params[0];
+			    var offset = req.query.offset || 1;
+			    console.log(queryItem, offset);
+			    
+			    customsearch.cse.list({ cx: CX, q: queryItem, start: offset, searchType: 'image', num: 10, auth: API_KEY }, function(err, resp) {
+				  if (err) {
+				    res.send(err);
+				    return;
+				  }
+				  // Got the response from custom search
+				  var reformatItems = resp.items.map(function(item) {
+				  	var rItem = {};
+				  	rItem.url = item.link;
+				  	rItem.snippet = item.snippet;
+				  	rItem.thumbnail = item.image.thumbnailLink;
+				  	rItem.context = item.image.contextLink;
+				  	
+				  	return rItem;
+				  })
+				  res.send(reformatItems);
+				  
+				  var searchRecord = new ImageSearch({term: queryItem, when: new Date().toISOString()});
+				  searchRecord.save(function(err) {
+						if(err) console.log(err);
+					});
+				});
+			});
+		app.route('/api/latestsearch')
+			.get(function(req, res) {
+			    ImageSearch.find().sort('-_id').limit(10).exec(function (err, latestSearch) {
+			    	if(err) console.log(err);
+			    	
+			    	res.send(latestSearch.map(function(record) {
+			    		var rRecord = {};
+			    		rRecord.term = record.term;
+			    		rRecord.when = record.when;
+			    		
+			    		return rRecord;
+			    	}));
+			    });
+			    
+			});
+			
+			
+		/*********************************************************************************/	
 	});
 
 	app.route('/')
@@ -115,8 +182,16 @@ module.exports = function (app, mongoose) {
 			};
 			
 		    res.send(JSON.stringify(returnInfo));
-		})
+		});
+		
+	// app.route('/api/imagesearch')
+	// 	.get(function(req, res) {
+	// 	    res.sendFile(path + '/public/search.html');
+	// 	});
 	
-	
+	// app.route('/api/latestsearch')
+	// 	.get(function(req, res) {
+		    
+	// 	});
 	
 };
