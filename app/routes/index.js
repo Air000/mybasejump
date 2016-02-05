@@ -2,10 +2,12 @@
 
 var linkifyjs = require("linkifyjs");
 var googleapis = require("googleapis");
+var multer = require("multer");
 var customsearch = googleapis.customsearch('v1');
 const API_KEY = 'AIzaSyCohpypclJBMcPy5nXXN2vNKlsbrATCzrg';
 const CX = '005349598196185284476:xuxolxmchfk';
 var path = process.cwd();
+var upload = multer({ dest: 'uploads/' });
 
 module.exports = function (app, mongoose) {
 
@@ -163,6 +165,23 @@ module.exports = function (app, mongoose) {
 		/*********************************************************************************/	
 	});
 
+	app.route('/api/upload')
+		.get(function(req, res) {
+		    res.sendFile(path + '/public/upload.html');
+		    
+		});
+	
+	app.route('/api/fileanalyse/')	
+		.post(upload.single('the-file'), function (req, res, next) {
+			  res.send(JSON.stringify({fileSize: req.file.size}));
+			});
+	// app.post('/api/fileanalyse', upload.single("the-file"), function (req, res, next) {
+	// 		  // req.file is the `avatar` file 
+	// 		  // req.body will hold the text fields, if there were any
+	// 		  console.log("req: ", req.file);
+	// 		  res.send(JSON.stringify({fileSize: req.file.size}));
+	// 		});
+		
 	app.route('/')
 		.get(function (req, res) {
 			res.sendFile(path + '/public/index.html');
