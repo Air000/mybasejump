@@ -1,5 +1,7 @@
 'use strict';
 
+var moment = require('moment');
+moment().format();
 var linkifyjs = require("linkifyjs");
 var googleapis = require("googleapis");
 var multer = require("multer");
@@ -175,12 +177,6 @@ module.exports = function (app, mongoose) {
 		.post(upload.single('the-file'), function (req, res, next) {
 			  res.send(JSON.stringify({fileSize: req.file.size}));
 			});
-	// app.post('/api/fileanalyse', upload.single("the-file"), function (req, res, next) {
-	// 		  // req.file is the `avatar` file 
-	// 		  // req.body will hold the text fields, if there were any
-	// 		  console.log("req: ", req.file);
-	// 		  res.send(JSON.stringify({fileSize: req.file.size}));
-	// 		});
 		
 	app.route('/')
 		.get(function (req, res) {
@@ -213,4 +209,36 @@ module.exports = function (app, mongoose) {
 		    
 	// 	});
 	
+	app.route('/api/timestamp-ms')
+		.get(function(req, res) {
+		    res.sendFile(path + '/public/timestamp-ms.html');
+		});
+	
+	app.route('/api/timestamp-ms/*')
+        .get(function (req, res) {
+            //console.log(req.originalUrl);
+            
+            var time = req.originalUrl.slice(1).replace(/%20/g, " ");
+            
+            var date;
+            console.log(isNaN(Number(time)));
+            if(!isNaN(Number(time))) {
+                date = new Date(Number(time*1000));
+            }else{
+                console.log(time);
+                date = new Date(time);
+            }
+            console.log(date);
+            var resJson;
+             //console.log(moment(date).isValid());
+            
+            if(date.getTime()) {
+                resJson = {unix: date.getTime()/1000, natural: moment(date).format("MMMM, D, YYYY")};
+                res.send(JSON.stringify(resJson));
+            }else{
+                resJson = {unix: null, natural: null};
+                res.send(JSON.stringify(resJson));
+            }
+            
+        });	
 };
