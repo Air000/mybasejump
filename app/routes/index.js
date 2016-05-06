@@ -44,7 +44,7 @@ module.exports = function (app, mongoose) {
 				var hostUrl = req.protocol + '://' + req.get('host').split(':')[0];
 				var urlSuffix = req.originalUrl.slice('/api/urlshorten/'.length);
 				
-				console.log("hostUrl: ", hostUrl, req.originalUrl);
+				console.log("hostUrl: ", hostUrl, req.originalUrl, urlSuffix);
 				
 				if(linkifyjs.test(urlSuffix)) {
 					
