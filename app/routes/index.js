@@ -75,7 +75,7 @@ module.exports = function (app, mongoose) {
 						}
 						
 					});
-				} else if(Number(urlSuffix)){
+				} else if(Number(urlSuffix) || urlSuffix == 0){
 					//this is a short url, search it in DB
 					Urls.find(function(err, doc) {
 						if(err) console.log(err);
